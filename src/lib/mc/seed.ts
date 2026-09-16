@@ -1,5 +1,6 @@
 import type { Sql } from "@/lib/db";
 import { PRODUCT } from "@/lib/mc/commerce";
+import { reconcileLiveActions } from "@/lib/mc/detect";
 
 const SKU = PRODUCT.catalogSku;
 
@@ -9,7 +10,11 @@ function iso(offsetMin: number, base = Date.now()) {
 
 export async function ensureSeeded(sql: Sql) {
   const existing = await sql<{ c: number }>`select count(*)::int as c from orders`;
-  if ((existing[0]?.c ?? 0) > 0) return;
+  if ((existing[0]?.c ?? 0) > 0) {
+    await completeLedger(sql);
+    await reconcileLiveActions(sql);
+    return;
+  }
 
   await sql`
     insert into settings (key, value, provenance) values
@@ -341,5 +346,63 @@ export async function ensureSeeded(sql: Sql) {
       group by customer_id
     ) s
     where c.id = s.customer_id
+  `;
+
+  await completeLedger(sql);
+  await reconcileLiveActions(sql);
+}
+
+async function completeLedger(sql: Sql) {
+  await sql`
+    insert into payments (id, order_id, method, status, amount_paise, utr_masked, gateway, age_minutes, created_at, verified_at) values
+    ('p4b','o4','cod','cod_pending',28900,null,'cod',180, ${iso(180)}, null),
+    ('p5','o5','upi','captured',22900,'UTR••••5512','manual_upi',970, ${iso(980)}, ${iso(970)}),
+    ('p6','o6','cod','cod_pending',28900,null,'cod',1320, ${iso(1320)}, null),
+    ('p7','o7','card','captured',22900,null,'razorpay',2590, ${iso(2600)}, ${iso(2590)}),
+    ('p8','o8','upi','captured',45800,'UTR••••8801','razorpay',5380, ${iso(5400)}, ${iso(5380)}),
+    ('p9','o9','upi','captured',22900,'UTR••••0911','razorpay',11490, ${iso(11500)}, ${iso(11490)}),
+    ('p10','o10','cod','collected',28900,null,'cod',7200, ${iso(15800)}, ${iso(7200)}),
+    ('p11','o11','cod','rto',28900,null,'cod',18000, ${iso(27400)}, null)
+    on conflict (id) do nothing
+  `;
+
+  await sql`
+    create table if not exists carts (
+      id text primary key,
+      email_masked text,
+      email_verified integer not null default 0,
+      sku text not null,
+      qty integer not null,
+      product_paise integer not null,
+      last_activity_at timestamptz not null,
+      converted_order_code text,
+      provenance text not null default 'DEMO',
+      created_at timestamptz not null default now()
+    )
+  `;
+
+  await sql`
+    insert into carts (id, email_masked, email_verified, sku, qty, product_paise, last_activity_at, converted_order_code, provenance) values
+    ('cart1','z***@gmail.com',1,${SKU},1,${PRODUCT.pricePaise},${iso(240)},null,'DEMO'),
+    ('cart2','d***@outlook.com',1,${SKU},1,${PRODUCT.pricePaise},${iso(400)},null,'DEMO'),
+    ('cart3','b***@gmail.com',1,${SKU},2,${PRODUCT.pricePaise * 2},${iso(720)},null,'DEMO'),
+    ('cart4','t***@yahoo.com',1,${SKU},1,${PRODUCT.pricePaise},${iso(180)},null,'DEMO')
+    on conflict (id) do nothing
+  `;
+
+  await sql`
+    insert into operational_events (id, event_type, entity_type, entity_id, severity, title, evidence, financial_impact_paise, confidence, occurred_at)
+    values
+    ('e10','payment_pending','order','SMF-20260916-0003','critical','UPI pending 88 min','{"utr":"UTR••••2201"}'::jsonb,45800,'PROVEN',${iso(88)}),
+    ('e11','payment_pending','order','SMF-20260916-0002','critical','UPI pending 126 min','{}'::jsonb,22900,'PROVEN',${iso(126)}),
+    ('e12','order_confirmed','order','SMF-20260916-0001','info','COD confirmed — to pack','{"method":"cod"}'::jsonb,28900,'PROVEN',${iso(180)}),
+    ('e13','order_confirmed','order','SMF-20260915-0012','info','UPI captured — to pack','{}'::jsonb,22900,'PROVEN',${iso(970)}),
+    ('e14','order_shipped','order','SMF-20260914-0007','info','Shipped Delhivery SR1234IN','{"awb":"SR1234IN"}'::jsonb,22900,'PROVEN',${iso(1400)}),
+    ('e15','out_for_delivery','order','SMF-20260912-0004','info','Out for delivery Bluedart SR1188IN','{"awb":"SR1188IN"}'::jsonb,45800,'PROVEN',${iso(2800)}),
+    ('e16','order_delivered','order','SMF-20260908-0002','info','Delivered Hyderabad','{"awb":"SR0911IN"}'::jsonb,22900,'PROVEN',${iso(7200)}),
+    ('e17','order_delivered','order','SMF-20260905-0006','info','Delivered Mumbai · COD collected','{"awb":"SR0882IN"}'::jsonb,22900,'PROVEN',${iso(11000)}),
+    ('e18','order_cancelled','order','SMF-20260915-0004','warning','Cancelled — refund due','{}'::jsonb,22900,'PROVEN',${iso(400)}),
+    ('e19','review_window','customer','C-1001','info','Review window open (delivered 8 Sep)','{"guardrail":"email schema P0 — do not send"}'::jsonb,null,'INFERRED',${iso(7200)})
+    on conflict (id) do nothing
   `;
 }

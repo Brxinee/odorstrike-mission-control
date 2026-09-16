@@ -66,6 +66,51 @@ function CustomerPage() {
           {String(c.acquisition_campaign ?? "—")}
         </p>
       </Panel>
+      <Panel className="p-4">
+        <Kicker>Contribution LTV</Kicker>
+        <p className="mt-2 font-mono text-xl tabular">DATA UNAVAILABLE</p>
+        <p className="mt-2 text-xs leading-5 text-muted">{data.contribution.note}</p>
+        <p className="mt-2 text-xs text-faint">
+          Delivered {data.contribution.deliveredQty} units · product ₹{" "}
+          {formatPaise(data.contribution.deliveredProductPaise)} (not contribution)
+        </p>
+      </Panel>
+      <section>
+        <Kicker>Timeline</Kicker>
+        <div className="mt-3 space-y-2">
+          {data.events.length === 0 ? (
+            <p className="text-sm text-muted">No operational events for this customer in the DEMO sample.</p>
+          ) : (
+            data.events.map((e) => (
+              <div key={e.id} className="rounded-md border border-line bg-surface p-3">
+                <p className="font-mono text-[11px] text-muted">
+                  {e.event_type} · {formatIst(e.occurred_at)}
+                </p>
+                <p className="mt-1 text-sm">{e.title}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+      <section>
+        <Kicker>Mail</Kicker>
+        <div className="mt-3 space-y-2">
+          {data.emails.length === 0 ? (
+            <p className="text-sm text-muted">No email_events for this customer.</p>
+          ) : (
+            data.emails.map((m) => (
+              <div key={m.id} className="rounded-md border border-line bg-surface p-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge tone={m.status === "FAILED" ? "danger" : "neutral"}>{m.status}</Badge>
+                  <span className="font-mono text-[11px]">{m.email_type}</span>
+                  <span className="font-mono text-[11px] text-muted">{m.order_code}</span>
+                </div>
+                {m.error_code ? <p className="mt-1 text-xs text-danger">{m.error_code}</p> : null}
+              </div>
+            ))
+          )}
+        </div>
+      </section>
       <section>
         <Kicker>Orders</Kicker>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">

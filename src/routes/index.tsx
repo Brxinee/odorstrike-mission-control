@@ -60,10 +60,10 @@ function Attention() {
             provenance="PROVEN · orders.status = upi_pending"
           />
           <Metric
-            label="ATP cover"
-            value={`${pulse.coverDays}d`}
-            hint={`${pulse.sellable} units · ${pulse.demandDaily}/day assumed`}
-            provenance={pulse.demandProvenance}
+            label="To pack"
+            value={`${pulse.toShipCount}`}
+            hint={formatPaise(pulse.toShipPaise)}
+            provenance="PROVEN · fulfillment_status = to_pack"
           />
         </div>
         <p className="mt-2 text-xs text-muted">
@@ -98,6 +98,27 @@ function Attention() {
         </div>
       </Panel>
 
+      <section>
+        <Kicker>What changed</Kicker>
+        <div className="mt-3 grid gap-2 lg:grid-cols-2">
+          {data.changes.map((c) => (
+            <Link
+              key={c.title}
+              to={c.href as "/orders" | "/finance" | "/payments" | "/incidents" | "/inventory"}
+              className="block rounded-md border border-line bg-surface p-4 hover:border-line-strong"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">{c.title}</p>
+                <Badge tone={c.confidence === "PROVEN" ? "acid" : c.confidence === "INFERRED" ? "warn" : "neutral"}>
+                  {c.confidence}
+                </Badge>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted">{c.why}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <section>
           <div className="mb-3 flex items-center justify-between">
@@ -110,7 +131,8 @@ function Attention() {
             {incidents.map((inc) => (
               <Link
                 key={inc.id}
-                to="/incidents"
+                to="/incidents/$code"
+                params={{ code: inc.code }}
                 className="block rounded-md border border-line bg-surface p-4 hover:border-line-strong"
               >
                 <div className="flex flex-wrap items-center gap-2">

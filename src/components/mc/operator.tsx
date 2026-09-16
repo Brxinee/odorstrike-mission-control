@@ -98,8 +98,20 @@ export function Operator({
                   ))}
                 </ul>
               ) : null}
-              {h.recommended ? <p className="mt-2 text-sm text-acid">{h.recommended}</p> : null}
-              {h.href ? (
+              {h.recommended ? (
+                h.href ? (
+                  <Link
+                    to={h.href as never}
+                    onClick={() => onOpenChange(false)}
+                    className="mt-3 inline-flex h-10 items-center rounded-sm bg-acid px-3 text-sm font-semibold text-acid-fg"
+                  >
+                    {h.recommended}
+                  </Link>
+                ) : (
+                  <p className="mt-2 text-sm text-acid">{h.recommended}</p>
+                )
+              ) : null}
+              {h.href && !h.recommended ? (
                 <Link
                   to={h.href as never}
                   onClick={() => onOpenChange(false)}

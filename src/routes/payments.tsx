@@ -68,7 +68,7 @@ function PaymentsPage() {
         <table className="w-full min-w-[880px] border-collapse">
           <thead className="bg-surface-2">
             <tr>
-              <Th>Order</Th>
+              <Th>Payment</Th>
               <Th>Method</Th>
               <Th>Status</Th>
               <Th>Amount</Th>
@@ -82,9 +82,14 @@ function PaymentsPage() {
             {rows.map((p) => (
               <tr key={p.id} className="border-t border-line">
                 <Td>
-                  <Link to="/orders/$code" params={{ code: p.order_code }} className="font-mono text-info">
-                    {p.order_code}
+                  <Link to="/payments/$id" params={{ id: p.id }} className="font-mono text-info">
+                    {p.id}
                   </Link>
+                  <div>
+                    <Link to="/orders/$code" params={{ code: p.order_code }} className="font-mono text-[11px] text-muted">
+                      {p.order_code}
+                    </Link>
+                  </div>
                 </Td>
                 <Td>{p.method}</Td>
                 <Td>

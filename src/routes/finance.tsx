@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Kicker, Metric, PageHead, Panel, Pending, Provenance } from "@/components/mc/ui";
+import { Badge, Kicker, Metric, PageHead, Pending, Provenance } from "@/components/mc/ui";
 import { getFinance } from "@/lib/mc/queries";
 import { formatPaise } from "@/lib/utils";
 
@@ -32,16 +32,48 @@ function FinancePage() {
         />
       </div>
 
-      <Panel className="p-4">
+      <section>
+        <Kicker>Where is cash</Kicker>
+        <p className="mt-1 text-xs text-muted">Not an accounting report. Every row says what it is and what it is not.</p>
+        <div className="mt-3 space-y-2">
+          {data.cash.rows.map((row) => (
+            <div key={row.label} className="rounded-md border border-line bg-surface p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm font-medium">{row.label}</p>
+                <div className="flex items-center gap-2">
+                  <Badge tone={row.confidence === "PROVEN" ? "acid" : row.confidence === "INFERRED" ? "warn" : "neutral"}>
+                    {row.confidence}
+                  </Badge>
+                  <span className="font-mono text-sm tabular">{row.paise == null ? "DATA UNAVAILABLE" : formatPaise(row.paise)}</span>
+                </div>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted">{row.note}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="rounded-md border border-line bg-surface p-4">
+        <Kicker>What is eating margin</Kicker>
+        <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
+          {data.cash.eatingMargin.map((line) => (
+            <li key={line} className="[overflow-wrap:anywhere]">
+              {line}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="rounded-md border border-line bg-surface p-4">
         <Kicker>Contribution (narrow)</Kicker>
         <p className="mt-2 font-mono text-2xl tabular">{formatPaise(data.contributionPaise)}</p>
         <p className="mt-2 text-sm leading-6 text-muted">{data.contributionNote}</p>
         <p className="mt-2 text-xs text-warn">
           COGS {formatPaise(data.cogsPerUnitPaise)}/unit — {data.cogsNote}
         </p>
-      </Panel>
+      </div>
 
-      <Panel className="p-4">
+      <div className="rounded-md border border-line bg-surface p-4">
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <Kicker>Booked vs realised</Kicker>
           <Provenance>daily_facts · do not chart ad_spend as fact</Provenance>
@@ -65,7 +97,7 @@ function FinancePage() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </Panel>
+      </div>
     </div>
   );
 }

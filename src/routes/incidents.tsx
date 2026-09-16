@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Badge, healthTone, Kicker, PageHead, Panel, Pending, Provenance, severityTone } from "@/components/mc/ui";
 import { getIncidents } from "@/lib/mc/queries";
 import { formatIst } from "@/lib/utils";
@@ -82,7 +82,12 @@ function IncidentsPage() {
 
       <div className="space-y-3">
         {rows.map((inc) => (
-          <Panel key={inc.id} className="p-4">
+          <Link
+            key={inc.id}
+            to="/incidents/$code"
+            params={{ code: inc.code }}
+            className="block rounded-md border border-line bg-surface p-4 hover:border-line-strong"
+          >
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={severityTone(inc.severity)}>{inc.severity}</Badge>
               <Badge>{inc.status}</Badge>
@@ -103,7 +108,7 @@ function IncidentsPage() {
             <p className="mt-3 font-mono text-[11px] text-faint">
               first {formatIst(inc.first_seen_at)} · last {formatIst(inc.last_seen_at)}
             </p>
-          </Panel>
+          </Link>
         ))}
       </div>
 

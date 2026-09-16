@@ -10,14 +10,28 @@ const GO = [
   { to: "/", label: "Attention" },
   { to: "/orders", label: "Orders" },
   { to: "/payments", label: "Payments — verify UPI" },
+  { to: "/carts", label: "Open carts" },
   { to: "/inventory", label: "Inventory / forecast" },
   { to: "/customers", label: "Customers" },
   { to: "/finance", label: "Finance" },
   { to: "/marketing", label: "Marketing" },
   { to: "/automations", label: "Automations" },
   { to: "/incidents", label: "Incidents / P0 email schema" },
+  { to: "/activity", label: "Activity / audit" },
+  { to: "/loop", label: "Storefront loop / experiments" },
   { to: "/architecture", label: "Architecture maps" },
   { to: "/settings", label: "Settings" },
+] as const;
+
+const DO = [
+  { to: "/payments", label: "Verify pending UPI" },
+  { to: "/carts", label: "Open inactive carts" },
+  { to: "/inventory", label: "Show low stock / forecast" },
+  { to: "/incidents", label: "Show incidents" },
+  { to: "/orders", label: "Show failed emails" },
+  { to: "/", label: "Show today's revenue" },
+  { to: "/", label: "Show yesterday vs today" },
+  { to: "/automations", label: "Open automations" },
 ] as const;
 
 export function CommandPalette({
@@ -40,7 +54,7 @@ export function CommandPalette({
         if (!cancelled) setData(d);
       })
       .catch(() => {
-        if (!cancelled) setData({ orders: [], customers: [], incidents: [] });
+        if (!cancelled) setData({ orders: [], customers: [], incidents: [], payments: [] });
       });
     return () => {
       cancelled = true;
@@ -79,6 +93,18 @@ export function CommandPalette({
               >
                 Ask Operator — what needs attention
               </Command.Item>
+            </Command.Group>
+            <Command.Group heading="Do">
+              {DO.map((g) => (
+                <Command.Item
+                  key={g.label}
+                  value={g.label}
+                  onSelect={() => go(g.to)}
+                  className="flex h-10 cursor-pointer items-center px-4 text-sm"
+                >
+                  {g.label}
+                </Command.Item>
+              ))}
             </Command.Group>
             <Command.Group heading="Go">
               {GO.map((g) => (
@@ -127,11 +153,26 @@ export function CommandPalette({
                 <Command.Item
                   key={i.code}
                   value={`${i.code} ${i.title}`}
-                  onSelect={() => go("/incidents")}
+                  onSelect={() => go("/incidents/$code", { code: i.code })}
                   className="flex h-10 cursor-pointer items-center justify-between gap-3 px-4 text-sm"
                 >
                   <span className="font-mono">{i.code}</span>
                   <span className="truncate text-muted">{i.title}</span>
+                </Command.Item>
+              ))}
+            </Command.Group>
+            <Command.Group heading="Payments">
+              {(data?.payments ?? []).map((p) => (
+                <Command.Item
+                  key={p.id}
+                  value={`${p.order_code} ${p.status} payment ${p.id}`}
+                  onSelect={() => go("/payments/$id", { id: p.id })}
+                  className="flex h-10 cursor-pointer items-center justify-between gap-3 px-4 text-sm"
+                >
+                  <span className="font-mono">{p.order_code}</span>
+                  <span className="text-muted">
+                    {p.status} · {formatPaise(p.amount_paise)}
+                  </span>
                 </Command.Item>
               ))}
             </Command.Group>

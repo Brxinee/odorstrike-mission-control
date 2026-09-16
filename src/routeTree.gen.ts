@@ -10,22 +10,32 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as ArchitectureRouteImport } from './routes/architecture'
 import { Route as AutomationsRouteImport } from './routes/automations'
+import { Route as CartsRouteImport } from './routes/carts'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as IncidentsRouteImport } from './routes/incidents'
 import { Route as InventoryRouteImport } from './routes/inventory'
+import { Route as LoopRouteImport } from './routes/loop'
 import { Route as MarketingRouteImport } from './routes/marketing'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CustomersIdRouteImport } from './routes/customers.$id'
+import { Route as IncidentsCodeRouteImport } from './routes/incidents.$code'
 import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
+import { Route as PaymentsIdRouteImport } from './routes/payments.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArchitectureRoute = ArchitectureRouteImport.update({
@@ -36,6 +46,11 @@ const ArchitectureRoute = ArchitectureRouteImport.update({
 const AutomationsRoute = AutomationsRouteImport.update({
   id: '/automations',
   path: '/automations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartsRoute = CartsRouteImport.update({
+  id: '/carts',
+  path: '/carts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CustomersRoute = CustomersRouteImport.update({
@@ -56,6 +71,11 @@ const IncidentsRoute = IncidentsRouteImport.update({
 const InventoryRoute = InventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoopRoute = LoopRouteImport.update({
+  id: '/loop',
+  path: '/loop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketingRoute = MarketingRouteImport.update({
@@ -83,117 +103,160 @@ const CustomersIdRoute = CustomersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => CustomersRoute,
 } as any)
+const IncidentsCodeRoute = IncidentsCodeRouteImport.update({
+  id: '/$code',
+  path: '/$code',
+  getParentRoute: () => IncidentsRoute,
+} as any)
 const OrdersCodeRoute = OrdersCodeRouteImport.update({
   id: '/$code',
   path: '/$code',
   getParentRoute: () => OrdersRoute,
 } as any)
+const PaymentsIdRoute = PaymentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PaymentsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/architecture': typeof ArchitectureRoute
   '/automations': typeof AutomationsRoute
+  '/carts': typeof CartsRoute
   '/customers': typeof CustomersRouteWithChildren
   '/finance': typeof FinanceRoute
-  '/incidents': typeof IncidentsRoute
+  '/incidents': typeof IncidentsRouteWithChildren
   '/inventory': typeof InventoryRoute
+  '/loop': typeof LoopRoute
   '/marketing': typeof MarketingRoute
   '/orders': typeof OrdersRouteWithChildren
-  '/payments': typeof PaymentsRoute
+  '/payments': typeof PaymentsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/customers/$id': typeof CustomersIdRoute
+  '/incidents/$code': typeof IncidentsCodeRoute
   '/orders/$code': typeof OrdersCodeRoute
+  '/payments/$id': typeof PaymentsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/architecture': typeof ArchitectureRoute
   '/automations': typeof AutomationsRoute
+  '/carts': typeof CartsRoute
   '/customers': typeof CustomersRouteWithChildren
   '/finance': typeof FinanceRoute
-  '/incidents': typeof IncidentsRoute
+  '/incidents': typeof IncidentsRouteWithChildren
   '/inventory': typeof InventoryRoute
+  '/loop': typeof LoopRoute
   '/marketing': typeof MarketingRoute
   '/orders': typeof OrdersRouteWithChildren
-  '/payments': typeof PaymentsRoute
+  '/payments': typeof PaymentsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/customers/$id': typeof CustomersIdRoute
+  '/incidents/$code': typeof IncidentsCodeRoute
   '/orders/$code': typeof OrdersCodeRoute
+  '/payments/$id': typeof PaymentsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/architecture': typeof ArchitectureRoute
   '/automations': typeof AutomationsRoute
+  '/carts': typeof CartsRoute
   '/customers': typeof CustomersRouteWithChildren
   '/finance': typeof FinanceRoute
-  '/incidents': typeof IncidentsRoute
+  '/incidents': typeof IncidentsRouteWithChildren
   '/inventory': typeof InventoryRoute
+  '/loop': typeof LoopRoute
   '/marketing': typeof MarketingRoute
   '/orders': typeof OrdersRouteWithChildren
-  '/payments': typeof PaymentsRoute
+  '/payments': typeof PaymentsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/customers/$id': typeof CustomersIdRoute
+  '/incidents/$code': typeof IncidentsCodeRoute
   '/orders/$code': typeof OrdersCodeRoute
+  '/payments/$id': typeof PaymentsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activity'
     | '/architecture'
     | '/automations'
+    | '/carts'
     | '/customers'
     | '/finance'
     | '/incidents'
     | '/inventory'
+    | '/loop'
     | '/marketing'
     | '/orders'
     | '/payments'
     | '/settings'
     | '/customers/$id'
+    | '/incidents/$code'
     | '/orders/$code'
+    | '/payments/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activity'
     | '/architecture'
     | '/automations'
+    | '/carts'
     | '/customers'
     | '/finance'
     | '/incidents'
     | '/inventory'
+    | '/loop'
     | '/marketing'
     | '/orders'
     | '/payments'
     | '/settings'
     | '/customers/$id'
+    | '/incidents/$code'
     | '/orders/$code'
+    | '/payments/$id'
   id:
     | '__root__'
     | '/'
+    | '/activity'
     | '/architecture'
     | '/automations'
+    | '/carts'
     | '/customers'
     | '/finance'
     | '/incidents'
     | '/inventory'
+    | '/loop'
     | '/marketing'
     | '/orders'
     | '/payments'
     | '/settings'
     | '/customers/$id'
+    | '/incidents/$code'
     | '/orders/$code'
+    | '/payments/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivityRoute: typeof ActivityRoute
   ArchitectureRoute: typeof ArchitectureRoute
   AutomationsRoute: typeof AutomationsRoute
+  CartsRoute: typeof CartsRoute
   CustomersRoute: typeof CustomersRouteWithChildren
   FinanceRoute: typeof FinanceRoute
-  IncidentsRoute: typeof IncidentsRoute
+  IncidentsRoute: typeof IncidentsRouteWithChildren
   InventoryRoute: typeof InventoryRoute
+  LoopRoute: typeof LoopRoute
   MarketingRoute: typeof MarketingRoute
   OrdersRoute: typeof OrdersRouteWithChildren
-  PaymentsRoute: typeof PaymentsRoute
+  PaymentsRoute: typeof PaymentsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
 }
 
@@ -204,6 +267,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/architecture': {
@@ -218,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/automations'
       fullPath: '/automations'
       preLoaderRoute: typeof AutomationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carts': {
+      id: '/carts'
+      path: '/carts'
+      fullPath: '/carts'
+      preLoaderRoute: typeof CartsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customers': {
@@ -246,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/inventory'
       fullPath: '/inventory'
       preLoaderRoute: typeof InventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loop': {
+      id: '/loop'
+      path: '/loop'
+      fullPath: '/loop'
+      preLoaderRoute: typeof LoopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marketing': {
@@ -283,12 +367,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomersIdRouteImport
       parentRoute: typeof CustomersRoute
     }
+    '/incidents/$code': {
+      id: '/incidents/$code'
+      path: '/$code'
+      fullPath: '/incidents/$code'
+      preLoaderRoute: typeof IncidentsCodeRouteImport
+      parentRoute: typeof IncidentsRoute
+    }
     '/orders/$code': {
       id: '/orders/$code'
       path: '/$code'
       fullPath: '/orders/$code'
       preLoaderRoute: typeof OrdersCodeRouteImport
       parentRoute: typeof OrdersRoute
+    }
+    '/payments/$id': {
+      id: '/payments/$id'
+      path: '/$id'
+      fullPath: '/payments/$id'
+      preLoaderRoute: typeof PaymentsIdRouteImport
+      parentRoute: typeof PaymentsRoute
     }
   }
 }
@@ -305,6 +403,18 @@ const CustomersRouteWithChildren = CustomersRoute._addFileChildren(
   CustomersRouteChildren,
 )
 
+interface IncidentsRouteChildren {
+  IncidentsCodeRoute: typeof IncidentsCodeRoute
+}
+
+const IncidentsRouteChildren: IncidentsRouteChildren = {
+  IncidentsCodeRoute: IncidentsCodeRoute,
+}
+
+const IncidentsRouteWithChildren = IncidentsRoute._addFileChildren(
+  IncidentsRouteChildren,
+)
+
 interface OrdersRouteChildren {
   OrdersCodeRoute: typeof OrdersCodeRoute
 }
@@ -316,17 +426,32 @@ const OrdersRouteChildren: OrdersRouteChildren = {
 const OrdersRouteWithChildren =
   OrdersRoute._addFileChildren(OrdersRouteChildren)
 
+interface PaymentsRouteChildren {
+  PaymentsIdRoute: typeof PaymentsIdRoute
+}
+
+const PaymentsRouteChildren: PaymentsRouteChildren = {
+  PaymentsIdRoute: PaymentsIdRoute,
+}
+
+const PaymentsRouteWithChildren = PaymentsRoute._addFileChildren(
+  PaymentsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivityRoute: ActivityRoute,
   ArchitectureRoute: ArchitectureRoute,
   AutomationsRoute: AutomationsRoute,
+  CartsRoute: CartsRoute,
   CustomersRoute: CustomersRouteWithChildren,
   FinanceRoute: FinanceRoute,
-  IncidentsRoute: IncidentsRoute,
+  IncidentsRoute: IncidentsRouteWithChildren,
   InventoryRoute: InventoryRoute,
+  LoopRoute: LoopRoute,
   MarketingRoute: MarketingRoute,
   OrdersRoute: OrdersRouteWithChildren,
-  PaymentsRoute: PaymentsRoute,
+  PaymentsRoute: PaymentsRouteWithChildren,
   SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport

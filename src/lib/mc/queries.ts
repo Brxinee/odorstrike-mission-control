@@ -264,9 +264,58 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
     where delivered_at is not null
       and (delivered_at at time zone 'Asia/Kolkata')::date = (timezone('Asia/Kolkata', now()))::date
   `;
+  const yesterdayBookedLive = await sql<{ c: number; p: number }>`
+    select count(*)::int as c, coalesce(sum(amount_paise),0)::int as p
+    from orders
+    where (placed_at at time zone 'Asia/Kolkata')::date = (timezone('Asia/Kolkata', now()))::date - 1
+      and status <> 'cancelled'
+  `;
   const realisedToday = todayRealised[0]?.p ?? 0;
   const bookedToday = todayBooked[0]?.p ?? 0;
   const ordersToday = todayBooked[0]?.c ?? 0;
+  const yBooked = yesterdayBookedLive[0]?.p ?? 0;
+  const yOrders = yesterdayBookedLive[0]?.c ?? 0;
+  const bookedDelta = bookedToday - yBooked;
+  const p0 = incidents.find((i) => i.code === "P0-EMAIL-SCHEMA");
+  const changes = [
+    {
+      title: bookedDelta === 0 ? "Booked today matches yesterday's live IST sum" : `Booked today ${bookedDelta > 0 ? "ahead of" : "behind"} yesterday`,
+      why: `Today ${ordersToday} orders / ₹${Math.round(bookedToday / 100)} vs yesterday ${yOrders} / ₹${Math.round(yBooked / 100)} (IST calendar, ex-cancelled, live order sum — not daily_facts).`,
+      impactPaise: bookedDelta,
+      confidence: "DETECTED",
+      href: "/orders",
+    },
+    {
+      title: realisedToday === 0 ? "Nothing realised today" : "Realised cash landed",
+      why: `Realised = delivered product_paise this IST day (${Math.round(realisedToday / 100)}). Booked is not cash. COD and prepaid-unverified stay unrealised.`,
+      impactPaise: realisedToday - bookedToday,
+      confidence: "DETECTED",
+      href: "/finance",
+    },
+    {
+      title: `${pendingUpi[0]?.c ?? 0} UPI still unverified`,
+      why: `₹${Math.round((pendingUpi[0]?.p ?? 0) / 100)} sitting on hold. Production confirmation is Razorpay payment.captured; this DEMO path is founder UTR verify.`,
+      impactPaise: pendingUpi[0]?.p ?? 0,
+      confidence: "PROVEN",
+      href: "/payments",
+    },
+    {
+      title: p0 ? p0.title : "Email schema watch is quiet",
+      why: p0
+        ? p0.evidence
+        : "No OPEN P0-EMAIL-SCHEMA row. Production still needs NOTIFY pgrst after 20260915 — git is not proof.",
+      impactPaise: null,
+      confidence: p0 ? "PRODUCTION_UNVERIFIED" : "DETECTED",
+      href: "/incidents",
+    },
+    {
+      title: `ATP cover ${sellable > 0 ? Number((sellable / PLANNING.expectedDailyDemand).toFixed(1)) : 0}d`,
+      why: PLANNING.expectedDailyProvenance,
+      impactPaise: null,
+      confidence: "INFERRED",
+      href: "/inventory",
+    },
+  ];
 
   return {
     generatedAt: new Date().toISOString(),
@@ -291,11 +340,14 @@ export const getOverview = createServerFn({ method: "GET" }).handler(async () =>
       sessionsToday: today?.sessions ?? null,
       yesterdayBooked: yesterday?.booked_paise ?? 0,
       yesterdayRealised: yesterday?.realised_paise ?? 0,
-      bookedDelta: bookedToday - (yesterday?.booked_paise ?? 0),
+      bookedDelta,
       realisedDelta: realisedToday - (yesterday?.realised_paise ?? 0),
       todayProvenance: today?.provenance ?? "DATA UNAVAILABLE",
       adSpendToday: today?.ad_spend_paise ?? null,
+      yesterdayBookedLive: yBooked,
+      yesterdayOrdersLive: yOrders,
     },
+    changes,
   };
 });
 
@@ -322,13 +374,52 @@ export const getOrder = createServerFn({ method: "GET" })
       select id, event_type, entity_type, entity_id, severity, title, evidence::text as evidence, financial_impact_paise, confidence, occurred_at
       from operational_events where entity_id = ${order.order_code} order by occurred_at desc
     `;
+    const spine: EventRow[] = [];
+    const pushSpine = (
+      id: string,
+      event_type: string,
+      title: string,
+      at: string | null,
+      severity: string = "info",
+    ) => {
+      if (!at) return;
+      spine.push({
+        id,
+        event_type,
+        entity_type: "order",
+        entity_id: order.order_code,
+        severity,
+        title,
+        evidence: "{}",
+        financial_impact_paise: order.amount_paise,
+        confidence: "PROVEN",
+        occurred_at: at,
+      });
+    };
+    pushSpine("t-placed", "order_placed", "Order placed", order.placed_at);
+    pushSpine("t-paid", "payment_verified", "Payment captured / collected", order.paid_at);
+    pushSpine("t-ship", "order_shipped", "Shipped", order.shipped_at);
+    pushSpine("t-ofd", "out_for_delivery", "Out for delivery", order.fulfillment_status === "out_for_delivery" ? order.shipped_at : null);
+    pushSpine("t-del", "order_delivered", "Delivered", order.delivered_at);
+    pushSpine("t-can", "order_cancelled", "Cancelled", order.cancelled_at, "warning");
+    pushSpine("t-rto", "rto_created", "RTO created", order.rto_at, "warning");
+    const seen = new Set<string>();
+    const timeline: EventRow[] = [];
+    for (const e of [...events, ...spine]) {
+      const key = `${e.event_type}:${e.occurred_at}`;
+      if (seen.has(key) || seen.has(e.event_type + ":" + e.title)) continue;
+      seen.add(key);
+      seen.add(e.event_type + ":" + e.title);
+      timeline.push(e);
+    }
+    timeline.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
     const emails = await sql<EmailRow>`select * from email_events where order_code = ${order.order_code} order by created_at desc`;
     const customerOrders = order.customer_id
       ? await sql<{ order_code: string; status: string; amount_paise: number; placed_at: string }>`
           select order_code, status, amount_paise, placed_at from orders where customer_id = ${order.customer_id} order by placed_at desc
         `
       : [];
-    return { order, customer, payment, events, emails, customerOrders };
+    return { order, customer, payment, events: timeline, emails, customerOrders };
   });
 
 export const getCustomers = createServerFn({ method: "GET" }).handler(async () => {
@@ -343,7 +434,31 @@ export const getCustomer = createServerFn({ method: "GET" })
     const sql = await db();
     const customer = (await sql<CustomerRow>`select * from customers where id = ${data.id}`)[0] ?? null;
     const orders = await sql<OrderRow>`select * from orders where customer_id = ${data.id} order by placed_at desc`;
-    return { customer, orders };
+    const events = await sql<EventRow>`
+      select id, event_type, entity_type, entity_id, severity, title, evidence::text as evidence, financial_impact_paise, confidence, occurred_at
+      from operational_events
+      where entity_id = ${data.id} or entity_id in (select order_code from orders where customer_id = ${data.id})
+      order by occurred_at desc
+    `;
+    const emails = await sql<EmailRow>`
+      select * from email_events
+      where order_code in (select order_code from orders where customer_id = ${data.id})
+      order by created_at desc
+    `;
+    const deliveredQty = orders.filter((o) => o.status === "delivered").reduce((n, o) => n + o.qty, 0);
+    const deliveredRevenue = orders.filter((o) => o.status === "delivered").reduce((n, o) => n + o.product_paise, 0);
+    return {
+      customer,
+      orders,
+      events,
+      emails,
+      contribution: {
+        valuePaise: null as number | null,
+        note: "Contribution LTV withheld. Need measured COGS, RTO cost, gateway, and ad allocation. Lifetime product ₹ is not LTV.",
+        deliveredQty,
+        deliveredProductPaise: deliveredRevenue,
+      },
+    };
   });
 
 export const getInventory = createServerFn({ method: "GET" }).handler(async () => {
@@ -409,6 +524,79 @@ export const getPayments = createServerFn({ method: "GET" }).handler(async () =>
   return { rows };
 });
 
+export const getPayment = createServerFn({ method: "GET" })
+  .validator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    const sql = await db();
+    const row =
+      (
+        await sql<PaymentRow & { order_code: string; order_status: string; customer_id: string | null }>`
+          select p.*, o.order_code, o.status as order_status, o.customer_id
+          from payments p
+          join orders o on o.id = p.order_id
+          where p.id = ${data.id}
+          limit 1
+        `
+      )[0] ?? null;
+    const events = row
+      ? await sql<EventRow>`
+          select id, event_type, entity_type, entity_id, severity, title, evidence::text as evidence, financial_impact_paise, confidence, occurred_at
+          from operational_events
+          where entity_id = ${row.order_code}
+          order by occurred_at desc
+        `
+      : [];
+    return { payment: row, events };
+  });
+
+export const getIncident = createServerFn({ method: "GET" })
+  .validator((input: { code: string }) => input)
+  .handler(async ({ data }) => {
+    const sql = await db();
+    const incident = (await sql<IncidentRow>`select * from incidents where code = ${data.code} limit 1`)[0] ?? null;
+    const health = incident
+      ? await sql<HealthRow>`select * from health_checks where service = ${incident.service} or service = 'resend' order by service`
+      : [];
+    const relatedActions = incident
+      ? asActions(await sql`select * from actions where action_key = 'email_schema' or href like ${"%incidents%"}`)
+      : [];
+    return { incident, health, relatedActions };
+  });
+
+export const getCarts = createServerFn({ method: "GET" }).handler(async () => {
+  const sql = await db();
+  let rows: Array<{
+    id: string;
+    email_masked: string | null;
+    email_verified: number;
+    sku: string;
+    qty: number;
+    product_paise: number;
+    last_activity_at: string;
+    converted_order_code: string | null;
+    provenance: string;
+  }> = [];
+  try {
+    rows = await sql`
+      select id, email_masked, email_verified, sku, qty, product_paise, last_activity_at, converted_order_code, provenance
+      from carts
+      order by last_activity_at desc
+    `;
+  } catch {
+    rows = [];
+  }
+  const open = rows.filter((r) => !r.converted_order_code);
+  return {
+    rows,
+    openCount: open.length,
+    openPaise: open.reduce((n, r) => n + r.product_paise, 0),
+    sendBlocked: true,
+    sendBlockedWhy:
+      "Cart recovery automation is disabled. Production email_events is PGRST205 / SCHEMA_MISMATCH. Sending would not be idempotent.",
+    provenance: "DEMO carts table — not live storefront sessions",
+  };
+});
+
 export const getFinance = createServerFn({ method: "GET" }).handler(async () => {
   const sql = await db();
   const realised = await sql<{ p: number }>`
@@ -433,6 +621,21 @@ export const getFinance = createServerFn({ method: "GET" }).handler(async () => 
   const deliveredQty = await sql<{ q: number }>`select coalesce(sum(qty),0)::int as q from orders where status = 'delivered'`;
   const gatewayBps = 2;
   const contribution = realised[0]!.p - deliveredQty[0]!.q * cogsEstimatePaise - Math.round(realised[0]!.p * gatewayBps / 100);
+  const codOutstanding = await sql<{ c: number; p: number }>`
+    select count(*)::int as c, coalesce(sum(amount_paise),0)::int as p
+    from orders
+    where payment_method = 'cod'
+      and payment_status in ('cod_pending')
+      and status not in ('cancelled','rto')
+  `;
+  const inventoryAtp = await sql<{ sellable: number; committed: number }>`
+    select
+      coalesce(sum(qty) filter (where stage = 'sellable' and direction = 'in'), 0)::int as sellable,
+      coalesce(sum(qty) filter (where stage = 'committed' and direction = 'out'), 0)::int as committed
+    from inventory_movements
+  `;
+  const atp = (inventoryAtp[0]?.sellable ?? 0) - (inventoryAtp[0]?.committed ?? 0);
+  const inventoryCapitalPaise = atp * cogsEstimatePaise;
   return {
     booked: booked[0]!.p,
     realised: realised[0]!.p,
@@ -446,6 +649,59 @@ export const getFinance = createServerFn({ method: "GET" }).handler(async () => 
     contributionPaise: contribution,
     contributionNote: "Contribution here = realised product revenue − estimated liquid COGS − 2% gateway. Excludes shipping, RTO, ads, COD fee. Window = all DEMO delivered orders.",
     facts,
+    cash: {
+      title: "Where is cash",
+      rows: [
+        {
+          label: "Realised (delivered product ₹)",
+          paise: realised[0]!.p,
+          note: "This is the only cash-like number. Prepaid unverified and COD uncollected are not here.",
+          confidence: "PROVEN",
+        },
+        {
+          label: "Pending UPI (on hold)",
+          paise: pending[0]!.p,
+          note: "Razorpay payment.captured is production truth. DEMO path is founder UTR verify.",
+          confidence: "PROVEN",
+        },
+        {
+          label: "COD uncollected",
+          paise: codOutstanding[0]?.p ?? 0,
+          note: `${codOutstanding[0]?.c ?? 0} open COD orders. Collectable includes ₹60 fee. Not realised until delivered + collected.`,
+          confidence: "PROVEN",
+        },
+        {
+          label: "Refund exposure",
+          paise: refund[0]!.p,
+          note: "Leaving the ledger. Production Admin pays this — DEMO cannot.",
+          confidence: "PROVEN",
+        },
+        {
+          label: "RTO exposure",
+          paise: rto[0]!.p,
+          note: "Includes COD fee. Reverse logistics + lost contribution. Not a cash inflow.",
+          confidence: "PROVEN",
+        },
+        {
+          label: "Inventory capital (ATP × ESTIMATE COGS)",
+          paise: inventoryCapitalPaise,
+          note: `${atp} sellable units × ₹23.70 ESTIMATE. Not a bank balance.`,
+          confidence: "INFERRED",
+        },
+        {
+          label: "Ad spend",
+          paise: null,
+          note: "DATA UNAVAILABLE — platforms not connected. DEMO daily_facts.ad_spend_paise is a placeholder.",
+          confidence: "UNKNOWN",
+        },
+      ],
+      eatingMargin: [
+        "Estimated liquid COGS ₹23.70/delivered unit — ESTIMATE, not spec.",
+        "Gateway 2% of realised product ₹ — modelled, not a Razorpay settlement file.",
+        "RTO: product + COD fee locked then reversed. One DEMO RTO in sample.",
+        "Ads: DATA UNAVAILABLE. Do not subtract DEMO ad_spend from contribution.",
+      ],
+    },
   };
 });
 
@@ -587,15 +843,25 @@ export const askOperator = createServerFn({ method: "POST" })
         `realisedToday=${p.realisedToday}`,
         `pending UPI ${p.pendingUpiCount} = ${p.pendingUpiPaise} paise`,
       );
-      recommended = "Verify the 3 UPI payments to convert booked → realised.";
+      recommended = `Verify the ${p.pendingUpiCount} UPI payment${p.pendingUpiCount === 1 ? "" : "s"} to convert booked → realised.`;
       href = "/payments";
       affected = ["pendingUpi"];
     } else if (q.includes("cart")) {
-      answer = "4 inactive carts are flagged INFERRED. Cart recovery automation is disabled because the email ledger schema is missing in production — sending would not be idempotent.";
-      evidence.push("Action cartsToRemind confidence=INFERRED", "Automation auto-cart enabled=0 guardrail=email schema P0");
+      const sql = await db();
+      let n = 0;
+      try {
+        n = ((await sql<{ c: number }>`select count(*)::int as c from carts where converted_order_code is null`)[0]?.c ?? 0);
+      } catch {
+        n = 0;
+      }
+      answer = n
+        ? `${n} inactive DEMO carts with verified email. Cart recovery automation is disabled because the production email ledger schema is missing — sending would not be idempotent.`
+        : "No open carts in this DEMO ledger. Cart recovery stays off while email_events is SCHEMA_MISMATCH.";
+      evidence.push(`carts.open=${n} provenance=DEMO`, "Automation auto-cart enabled=0 guardrail=email schema P0");
       confidence = "INFERRED";
       recommended = "Do not send cart mail until email_events exists and a test send persists.";
-      href = "/automations";
+      href = "/carts";
+      affected = ["cartsToRemind"];
     } else if (q.includes("stock") || q.includes("sku") || q.includes("produce")) {
       answer = `ATP ${overview.pulse.sellable} units of ${PRODUCT.catalogSku}. Cover ${overview.pulse.coverDays} days at ${PLANNING.expectedDailyDemand}/day assumed. Recommendation uses ceil(daily × lead + safety − ATP). Demand is INFERRED.`;
       evidence.push("ATP = sellable IN − committed OUT", PLANNING.expectedDailyProvenance);
@@ -693,7 +959,12 @@ export const searchWorkspace = createServerFn({ method: "GET" }).handler(async (
   const incidents = await sql<{ code: string; title: string; status: string }>`
     select code, title, status from incidents order by first_seen_at desc
   `;
-  return { orders, customers, incidents };
+  const payments = await sql<{ id: string; order_code: string; status: string; amount_paise: number }>`
+    select p.id, o.order_code, p.status, p.amount_paise
+    from payments p join orders o on o.id = p.order_id
+    order by p.created_at desc
+  `;
+  return { orders, customers, incidents, payments };
 });
 
 export const getAudit = createServerFn({ method: "GET" }).handler(async () => {
@@ -701,7 +972,68 @@ export const getAudit = createServerFn({ method: "GET" }).handler(async () => {
   const rows = await sql<{
     id: string; actor: string; action: string; entity_type: string; entity_id: string | null; result: string; request_id: string | null; created_at: string;
   }>`select * from audit_log order by created_at desc limit 60`;
-  return { rows };
+  const events = await sql<EventRow>`
+    select id, event_type, entity_type, entity_id, severity, title, evidence::text as evidence, financial_impact_paise, confidence, occurred_at
+    from operational_events order by occurred_at desc limit 40
+  `;
+  return { rows, events };
+});
+
+export const getLoop = createServerFn({ method: "GET" }).handler(async () => {
+  return {
+    provenance: "Storefront loop register — experiments are hypotheses, not shipped tests. No random UI change.",
+    funnel: [
+      { stage: "visitor", metric: "DATA UNAVAILABLE", note: "page_views exist in production; this DEMO OS is not wired to live analytics." },
+      { stage: "PDP", metric: "DATA UNAVAILABLE", note: "Need first-party product_view with SKU OS-001-50ML." },
+      { stage: "cart", metric: "DATA UNAVAILABLE", note: "Abandoned carts must not trigger mail while email_events schema cache is missing." },
+      { stage: "checkout", metric: "DATA UNAVAILABLE", note: "Baymard: hidden cost is the kill shot — COD ₹60 must stay visible before pay." },
+      { stage: "purchase", metric: "DEMO orders only", note: "This ledger is synthetic. Production purchase is smelloff.in + Razorpay/COD." },
+      { stage: "repeat", metric: "DATA UNAVAILABLE", note: "Sample too small for a repeat rate. Reorder window is INFERRED 20d." },
+    ],
+    experiments: [
+      {
+        id: "exp-pdp-dates",
+        hypothesis: "Promising calendar delivery dates (not ‘3–5 days’) on the PDP reduces checkout abandonment.",
+        audience: "Mobile PDP visitors, pan-India",
+        metric: "Add-to-cart → purchase, 14-day window",
+        baseline: "DATA UNAVAILABLE — not running",
+        result: "NOT STARTED",
+        decision: "Copy-only. Do not change ₹229 / ₹60 COD / SKU.",
+        status: "queued",
+        baymard: "Shipping cost and delivery promise belong on the PDP, not only at pay.",
+      },
+      {
+        id: "exp-cod-fee-early",
+        hypothesis: "Showing ₹60 COD + collectable ₹289 next to the payment method (not after confirm) cuts COD surprise cancellations.",
+        audience: "COD choosers",
+        metric: "COD cancel rate, 14-day window",
+        baseline: "DATA UNAVAILABLE",
+        result: "NOT STARTED",
+        decision: "Fee amount is frozen at ₹60. Visibility only.",
+        status: "queued",
+        baymard: "Unexpected costs at checkout drive a large share of abandonment.",
+      },
+      {
+        id: "exp-review-window",
+        hypothesis: "Review request 7 days after delivered, once email_events insert+webhook are proven, lifts reviews without spam.",
+        audience: "Delivered customers with email, no prior request",
+        metric: "Review submitted / delivered, 30-day window",
+        baseline: "Kill switch ON until SCHEMA_MISMATCH is gone",
+        result: "BLOCKED",
+        decision: "Do not enable while PGRST205 is live.",
+        status: "blocked",
+        baymard: "Post-purchase trust compounds PDP conversion. Do not send if the ledger cannot persist.",
+      },
+    ],
+    storefront: {
+      url: "https://smelloff.in",
+      sku: PRODUCT.catalogSku,
+      claim: PRODUCT.claim,
+      pricePaise: PRODUCT.pricePaise,
+      codFeePaise: PRODUCT.codFeePaise,
+      outOfScope: PRODUCT.outOfScope,
+    },
+  };
 });
 
 export const verifyAllPending = createServerFn({ method: "POST" }).handler(async () => {
