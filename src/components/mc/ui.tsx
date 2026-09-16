@@ -3,9 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function Provenance({ children }: { children: ReactNode }) {
   return (
-    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
-      {children}
-    </p>
+    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{children}</p>
   );
 }
 
@@ -83,9 +81,32 @@ export function Btn({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex h-11 min-h-11 items-center justify-center gap-2 rounded-sm px-3 text-[13px] font-medium transition-opacity disabled:opacity-40",
+        "inline-flex h-11 min-h-11 items-center justify-center gap-2 rounded-sm px-3 text-sm font-medium transition-[transform,opacity,filter] duration-150 ease-out active:not-disabled:scale-[0.96] disabled:opacity-40",
         v[variant],
         className,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-11 min-h-11 items-center rounded-sm px-3 text-sm font-medium transition-colors duration-150",
+        active ? "bg-acid text-acid-fg" : "border border-line bg-surface text-muted hover:text-fg",
       )}
     >
       {children}
@@ -101,7 +122,12 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-md border border-line bg-surface", className)}>
+    <section
+      className={cn(
+        "rounded-lg border border-line bg-surface shadow-[0_0_0_1px_rgba(255,255,255,0.03)]",
+        className,
+      )}
+    >
       {children}
     </section>
   );
@@ -121,10 +147,10 @@ export function Metric({
   delta?: number | null;
 }) {
   return (
-    <div className="min-w-0 rounded-md border border-line bg-surface p-4">
+    <div className="min-w-0 rounded-lg border border-line bg-surface p-4">
       <Kicker>{label}</Kicker>
       <div className="mt-2 font-mono text-2xl tabular tracking-tight text-fg">{value}</div>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs leading-5 text-muted">{hint}</p> : null}
       {delta != null && Number.isFinite(delta) ? (
         <p className={cn("mt-1 font-mono text-xs tabular", delta >= 0 ? "text-acid" : "text-danger")}>
           {delta >= 0 ? "+" : "−"}
@@ -140,9 +166,9 @@ export function Metric({
 
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-md border border-dashed border-line px-5 py-10 text-center">
+    <div className="rounded-lg border border-dashed border-line px-5 py-12 text-center">
       <p className="text-sm font-medium text-fg">{title}</p>
-      <p className="mt-1 text-sm text-muted">{body}</p>
+      <p className="mt-1 text-sm leading-6 text-muted">{body}</p>
     </div>
   );
 }
@@ -151,16 +177,19 @@ export function PageHead({
   kicker,
   title,
   aside,
+  desc,
 }: {
   kicker: string;
   title: string;
   aside?: ReactNode;
+  desc?: string;
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
+      <div className="min-w-0 max-w-3xl">
         <Kicker>{kicker}</Kicker>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h1>
+        {desc ? <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{desc}</p> : null}
       </div>
       {aside}
     </div>
@@ -171,33 +200,48 @@ export function Pending() {
   return (
     <div className="space-y-3" aria-busy="true" aria-label="Loading">
       <div className="h-8 w-48 animate-pulse rounded-sm bg-surface-2" />
-      <div className="h-36 animate-pulse rounded-md bg-surface" />
+      <div className="h-36 animate-pulse rounded-lg bg-surface" />
       <div className="grid gap-3 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-28 animate-pulse rounded-md bg-surface" />
+          <div key={i} className="h-28 animate-pulse rounded-lg bg-surface" />
         ))}
       </div>
     </div>
   );
 }
 
+export function TableWrap({
+  children,
+  minClass = "min-w-[880px]",
+}: {
+  children: ReactNode;
+  minClass?: string;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-line">
+      <table className={cn("mc-table w-full border-collapse", minClass)}>{children}</table>
+    </div>
+  );
+}
+
 export function Th({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <th className={cn("px-3 py-2 text-left font-mono text-[10px] uppercase tracking-wider text-faint", className)}>
+    <th className={cn("px-3 py-2.5 text-left font-mono text-[10px] uppercase tracking-wider text-faint", className)}>
       {children}
     </th>
   );
 }
 
 export function Td({ children, className }: { children: ReactNode; className?: string }) {
-  return <td className={cn("px-3 py-2.5 text-sm", className)}>{children}</td>;
+  return <td className={cn("px-3 py-3 text-sm", className)}>{children}</td>;
 }
 
 export function orderTone(status: string): "acid" | "warn" | "danger" | "info" | "neutral" {
   if (status === "delivered" || status === "captured" || status === "collected") return "acid";
   if (status === "upi_pending" || status === "pending_verify" || status === "cod_pending") return "warn";
   if (status === "rto" || status === "cancelled" || status === "refund_due" || status === "FAILED") return "danger";
-  if (status === "dispatched" || status === "confirmed" || status === "out_for_delivery" || status === "sent") return "info";
+  if (status === "dispatched" || status === "confirmed" || status === "out_for_delivery" || status === "sent")
+    return "info";
   return "neutral";
 }
 
@@ -208,4 +252,3 @@ export function healthTone(state: string): "acid" | "warn" | "danger" | "info" |
   if (state === "UNPROVEN" || state === "CONFIGURED") return "info";
   return "neutral";
 }
-

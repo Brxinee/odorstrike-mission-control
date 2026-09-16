@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Badge, Kicker, orderTone, PageHead, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { Badge, Chip, Empty, orderTone, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getOrders } from "@/lib/mc/queries";
 import { formatIst, formatPaise } from "@/lib/utils";
 
@@ -34,26 +34,24 @@ function OrdersPage() {
       <PageHead
         kicker="Orders"
         title="Index"
-        aside={<Provenance>{provenance} · catalog SKU OS-001-50ML</Provenance>}
+        desc="Stripe-style table first. Status is the order row, not a vibe. Catalog SKU OS-001-50ML."
+        aside={<Provenance>{provenance}</Provenance>}
       />
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => setFilter(f.id)}
-            className={`h-10 rounded-sm px-3 text-sm ${filter === f.id ? "bg-acid text-acid-fg" : "border border-line bg-surface text-muted"}`}
-          >
+          <Chip key={f.id} active={filter === f.id} onClick={() => setFilter(f.id)}>
             {f.label}
-          </button>
+          </Chip>
         ))}
       </div>
-      <Kicker>
+      <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-faint">
         {shown.length} of {rows.length}
-      </Kicker>
-      <div className="mt-3 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[880px] border-collapse">
-          <thead className="bg-surface-2">
+      </p>
+      {shown.length === 0 ? (
+        <Empty title="No orders in this filter" body="Clear the chip or wait for the next DEMO placement." />
+      ) : (
+        <TableWrap>
+          <thead>
             <tr>
               <Th>Order</Th>
               <Th>Status</Th>
@@ -92,8 +90,8 @@ function OrdersPage() {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+        </TableWrap>
+      )}
     </div>
   );
 }

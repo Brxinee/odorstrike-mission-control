@@ -18,6 +18,7 @@ function LoopPage() {
       <PageHead
         kicker="Storefront loop"
         title="Hypothesis → change → measure → decide"
+        desc="No random UI change. Experiments may not invent claims or touch ₹229 / ₹60 COD / SKU."
         aside={<Provenance>{data.provenance}</Provenance>}
       />
 

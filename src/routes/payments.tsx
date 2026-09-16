@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge, Btn, orderTone, PageHead, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { Badge, Btn, orderTone, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getPayments, verifyAllPending, verifyPayment } from "@/lib/mc/queries";
 import { ageLabel, formatIst, formatPaise } from "@/lib/utils";
 
@@ -50,6 +50,7 @@ function PaymentsPage() {
       <PageHead
         kicker="Payments"
         title="Money in the ledger"
+        desc="DEMO verify marks captured here only. Live prepaid source of truth is Razorpay payment.captured. Refunds stay in production Admin."
         aside={
           pending ? (
             <Btn variant="primary" disabled={busy !== null} onClick={() => void verifyAll()}>
@@ -58,15 +59,10 @@ function PaymentsPage() {
           ) : null
         }
       />
-      <p className="mb-4 text-sm text-muted">
-        DEMO verify marks captured in this ledger only. Live prepaid source of truth is Razorpay{" "}
-        <span className="font-mono">payment.captured</span>. Refunds stay in production Admin — handle the action when
-        the payout is actually sent.
-      </p>
       <Provenance>payments ⋈ orders · integer paise</Provenance>
-      <div className="mt-3 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[880px] border-collapse">
-          <thead className="bg-surface-2">
+      <div className="mt-3">
+        <TableWrap>
+          <thead>
             <tr>
               <Th>Payment</Th>
               <Th>Method</Th>
@@ -80,13 +76,13 @@ function PaymentsPage() {
           </thead>
           <tbody>
             {rows.map((p) => (
-              <tr key={p.id} className="border-t border-line">
+              <tr key={p.id} className="border-t border-line hover:bg-surface-2/60">
                 <Td>
                   <Link to="/payments/$id" params={{ id: p.id }} className="font-mono text-info">
                     {p.id}
                   </Link>
-                  <div>
-                    <Link to="/orders/$code" params={{ code: p.order_code }} className="font-mono text-[11px] text-muted">
+                  <div className="font-mono text-xs text-faint">
+                    <Link to="/orders/$code" params={{ code: p.order_code }} className="text-muted hover:text-info">
                       {p.order_code}
                     </Link>
                   </div>
@@ -111,7 +107,7 @@ function PaymentsPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </TableWrap>
       </div>
     </div>
   );

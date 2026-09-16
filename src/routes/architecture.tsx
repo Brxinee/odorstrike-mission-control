@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Badge, Kicker, PageHead, Panel, Pending, Td, Th } from "@/components/mc/ui";
+import { Badge, Kicker, PageHead, Pending, TableWrap, Td, Th } from "@/components/mc/ui";
 import { evolve, kill, keep, maps, roadmap } from "@/lib/mc/architecture";
 import { getSot } from "@/lib/mc/queries";
 
@@ -31,17 +31,15 @@ function ArchitecturePage() {
 
   return (
     <div className="space-y-10">
-      <PageHead kicker="Phase 0" title="Architecture maps" />
-      <p className="max-w-3xl text-sm leading-6 text-muted">
-        Required before large code in the two production repos. This screen is the living map. Production cannot be
-        DDL’d from here. Smelloff @ c1a4e21 · Admin @ 17fd2d6.
-      </p>
+      <PageHead
+        kicker="Phase 0"
+        title="Architecture maps"
+        desc="Living map for the two production repos. Production cannot be DDL’d from here."
+      />
 
       {Object.entries(maps).map(([key, section]) => (
         <section key={key}>
-          <Kicker>
-            Map {key}
-          </Kicker>
+          <Kicker>Map {key}</Kicker>
           <h2 className="mt-1 text-lg font-semibold">{section.title}</h2>
           <div className="mt-3 space-y-2">
             {section.body.map((p) => (
@@ -56,9 +54,9 @@ function ArchitecturePage() {
       <section>
         <Kicker>Map B · live matrix</Kicker>
         <h2 className="mt-1 text-lg font-semibold">Source of truth</h2>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[960px] border-collapse">
-            <thead className="bg-surface-2">
+        <div className="mt-3">
+          <TableWrap minClass="min-w-[960px]">
+            <thead>
               <tr>
                 <Th>Fact</Th>
                 <Th>Source</Th>
@@ -70,7 +68,7 @@ function ArchitecturePage() {
             </thead>
             <tbody>
               {sot.map((r) => (
-                <tr key={r.fact} className="border-t border-line align-top">
+                <tr key={r.fact} className="border-t border-line align-top hover:bg-surface-2/60">
                   <Td className="font-medium">{r.fact}</Td>
                   <Td className="text-xs text-muted">{r.source}</Td>
                   <Td className="text-xs text-muted">{r.current_impl}</Td>
@@ -82,53 +80,49 @@ function ArchitecturePage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TableWrap>
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel className="p-4">
-          <Kicker>Kill</Kicker>
-          <ul className="mt-3 space-y-2">
-            {kill.map((x) => (
-              <li key={x} className="text-sm leading-5 text-muted">
-                {x}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-        <Panel className="p-4">
-          <Kicker>Keep</Kicker>
-          <ul className="mt-3 space-y-2">
-            {keep.map((x) => (
-              <li key={x} className="text-sm leading-5 text-muted">
-                {x}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-        <Panel className="p-4">
-          <Kicker>Evolve</Kicker>
-          <ul className="mt-3 space-y-2">
-            {evolve.map((x) => (
-              <li key={x} className="text-sm leading-5 text-muted">
-                {x}
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      </div>
+      <section>
+        <Kicker>Kill / keep / evolve</Kicker>
+        <div className="mt-3 grid gap-4 lg:grid-cols-3">
+          <div>
+            <h3 className="text-sm font-semibold text-danger">Kill</h3>
+            <ul className="mt-2 space-y-2 text-sm leading-6 text-muted">
+              {kill.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-acid">Keep</h3>
+            <ul className="mt-2 space-y-2 text-sm leading-6 text-muted">
+              {keep.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-info">Evolve</h3>
+            <ul className="mt-2 space-y-2 text-sm leading-6 text-muted">
+              {evolve.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
 
       <section>
-        <Kicker>90-day ranked roadmap</Kicker>
-        <ol className="mt-3 space-y-2">
+        <Kicker>90-day roadmap</Kicker>
+        <ol className="mt-3 space-y-3">
           {roadmap.map((r) => (
-            <li key={r.when} className="rounded-md border border-line bg-surface p-4">
-              <div className="flex flex-wrap items-baseline gap-2">
-                <span className="font-mono text-xs text-acid">{r.when}</span>
-                <span className="text-xs text-faint">{r.owner}</span>
-              </div>
-              <p className="mt-1 text-sm leading-6">{r.item}</p>
+            <li key={r.item} className="rounded-lg border border-line bg-surface p-4">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-faint">
+                {r.when} · {r.owner}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted">{r.item}</p>
             </li>
           ))}
         </ol>

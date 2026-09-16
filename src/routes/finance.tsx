@@ -17,7 +17,12 @@ function FinancePage() {
 
   return (
     <div className="space-y-6">
-      <PageHead kicker="Finance" title="Booked is not realised" aside={<Provenance>DEMO ledger · IST</Provenance>} />
+      <PageHead
+        kicker="Finance"
+        title="Booked is not realised"
+        desc="Cash is realised. UPI pending, COD uncollected, refunds and RTO sit beside booked — they are not margin."
+        aside={<Provenance>DEMO ledger · IST</Provenance>}
+      />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <Metric label="Booked (ex-cancelled)" value={formatPaise(data.booked)} provenance="sum(amount_paise) status ≠ cancelled" />
         <Metric label="Realised (delivered)" value={formatPaise(data.realised)} provenance="sum(product_paise) status = delivered" />

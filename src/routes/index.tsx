@@ -22,6 +22,7 @@ function Attention() {
       <PageHead
         kicker="Mission Control"
         title="What needs attention"
+        desc="Action Center first. Booked is not cash. Every number has a formula, a window, and provenance."
         aside={<Provenance>{data.provenance}</Provenance>}
       />
 

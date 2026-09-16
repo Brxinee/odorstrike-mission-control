@@ -14,7 +14,12 @@ function CartsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHead kicker="Carts" title="Inactive, not yet orders" aside={<Provenance>{data.provenance}</Provenance>} />
+      <PageHead
+        kicker="Carts"
+        title="Inactive, not yet orders"
+        desc="Ledger-backed DEMO carts. Recovery mail stays blocked while production email_events is SCHEMA_MISMATCH."
+        aside={<Provenance>{data.provenance}</Provenance>}
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <Metric
           label="Open carts"

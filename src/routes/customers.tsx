@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Badge, PageHead, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { Badge, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getCustomers } from "@/lib/mc/queries";
 import { formatIstDate, formatPaise } from "@/lib/utils";
 
@@ -31,57 +31,56 @@ function CustomersPage() {
 
   return (
     <div>
-      <PageHead kicker="Customers" title="Index" aside={<Provenance>{data.provenance}</Provenance>} />
-      <p className="mb-4 text-sm text-muted">
-        Identity is a display code + masked phone/email. Predicted reorder is an INFERRED ~20-day heuristic, not a
-        survival model. Lifetime ₹ is sum of product_paise on non-cancelled DEMO orders — not contribution LTV.
-      </p>
-      <div className="overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[920px] border-collapse">
-          <thead className="bg-surface-2">
-            <tr>
-              <Th>Code</Th>
-              <Th>City</Th>
-              <Th>Contact</Th>
-              <Th>Orders</Th>
-              <Th>RTO</Th>
-              <Th>Lifetime ₹</Th>
-              <Th>Source</Th>
-              <Th>Reorder</Th>
+      <PageHead
+        kicker="Customers"
+        title="Index"
+        desc="Identity is a display code + masked phone/email. Predicted reorder is an INFERRED ~20-day heuristic — not a survival model. Lifetime ₹ is not contribution LTV."
+        aside={<Provenance>{data.provenance}</Provenance>}
+      />
+      <TableWrap minClass="min-w-[920px]">
+        <thead>
+          <tr>
+            <Th>Code</Th>
+            <Th>City</Th>
+            <Th>Contact</Th>
+            <Th>Orders</Th>
+            <Th>RTO</Th>
+            <Th>Lifetime ₹</Th>
+            <Th>Source</Th>
+            <Th>Reorder</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((c) => (
+            <tr key={c.id} className="border-t border-line hover:bg-surface-2/60">
+              <Td>
+                <Link to="/customers/$id" params={{ id: c.id }} className="font-mono text-info">
+                  {c.display_code}
+                </Link>
+              </Td>
+              <Td>
+                {c.city}
+                {c.state ? `, ${c.state}` : ""}
+              </Td>
+              <Td className="text-muted">
+                {c.phone_masked}
+                <div className="text-xs">{c.email_masked}</div>
+              </Td>
+              <Td className="font-mono tabular">{c.order_count}</Td>
+              <Td className="font-mono tabular">{c.rto_count}</Td>
+              <Td className="font-mono tabular">{formatPaise(Number(c.lifetime_revenue_paise))}</Td>
+              <Td className="text-muted">{c.acquisition_source ?? "—"}</Td>
+              <Td>
+                {c.predicted_reorder_on ? (
+                  <Badge tone="warn">{formatIstDate(c.predicted_reorder_on)} · INFERRED</Badge>
+                ) : (
+                  <span className="text-faint">—</span>
+                )}
+              </Td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((c) => (
-              <tr key={c.id} className="border-t border-line hover:bg-surface-2/60">
-                <Td>
-                  <Link to="/customers/$id" params={{ id: c.id }} className="font-mono text-info">
-                    {c.display_code}
-                  </Link>
-                </Td>
-                <Td>
-                  {c.city}
-                  {c.state ? `, ${c.state}` : ""}
-                </Td>
-                <Td className="text-muted">
-                  {c.phone_masked}
-                  <div className="text-[11px]">{c.email_masked}</div>
-                </Td>
-                <Td className="font-mono tabular">{c.order_count}</Td>
-                <Td className="font-mono tabular">{c.rto_count}</Td>
-                <Td className="font-mono tabular">{formatPaise(Number(c.lifetime_revenue_paise))}</Td>
-                <Td className="text-muted">{c.acquisition_source ?? "—"}</Td>
-                <Td>
-                  {c.predicted_reorder_on ? (
-                    <Badge tone="warn">{formatIstDate(c.predicted_reorder_on)} · INFERRED</Badge>
-                  ) : (
-                    <span className="text-faint">—</span>
-                  )}
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </TableWrap>
     </div>
   );
 }

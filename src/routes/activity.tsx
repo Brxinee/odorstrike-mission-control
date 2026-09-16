@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Badge, Kicker, PageHead, Panel, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { Badge, Kicker, PageHead, Panel, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getAudit } from "@/lib/mc/queries";
 import { formatIst, formatPaise } from "@/lib/utils";
 
@@ -17,12 +17,12 @@ function ActivityPage() {
       <PageHead
         kicker="Activity"
         title="What the system did"
+        desc="event → detection → decision lives here. Actions are the work items. This is the audit, not Settings."
         aside={<Provenance>audit_log + operational_events · DEMO</Provenance>}
       />
 
       <section>
         <Kicker>Events</Kicker>
-        <p className="mt-1 text-xs text-muted">event → detection → decision lives here. Actions are the work items.</p>
         <div className="mt-3 space-y-2">
           {events.map((e) => (
             <Panel key={e.id} className="p-4">
@@ -31,9 +31,7 @@ function ActivityPage() {
                   {e.severity}
                 </Badge>
                 <span className="font-mono text-[11px] text-muted">{e.event_type}</span>
-                {e.entity_id ? (
-                  <span className="font-mono text-[11px] text-info">{e.entity_id}</span>
-                ) : null}
+                {e.entity_id ? <span className="font-mono text-[11px] text-info">{e.entity_id}</span> : null}
               </div>
               <p className="mt-2 text-sm font-medium">{e.title}</p>
               <p className="mt-1 text-xs leading-5 text-muted [overflow-wrap:anywhere]">{e.evidence}</p>
@@ -48,9 +46,9 @@ function ActivityPage() {
 
       <section>
         <Kicker>Audit</Kicker>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead className="bg-surface-2">
+        <div className="mt-3">
+          <TableWrap minClass="min-w-[720px]">
+            <thead>
               <tr>
                 <Th>When</Th>
                 <Th>Actor</Th>
@@ -62,7 +60,7 @@ function ActivityPage() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t border-line">
+                <tr key={r.id} className="border-t border-line hover:bg-surface-2/60">
                   <Td className="whitespace-nowrap text-muted">{formatIst(r.created_at)}</Td>
                   <Td>{r.actor}</Td>
                   <Td className="font-mono text-xs">{r.action}</Td>
@@ -86,7 +84,7 @@ function ActivityPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TableWrap>
         </div>
       </section>
     </div>

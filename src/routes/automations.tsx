@@ -62,6 +62,7 @@ function AutomationsPage() {
       <PageHead
         kicker="Automations"
         title="Trigger → condition → action"
+        desc="Cart recovery and review mail stay blocked while the production email ledger is missing. Nothing auto-marks paid or auto-purchases stock."
         aside={<Provenance>DEMO rows · production email still P0</Provenance>}
       />
       <p className="text-sm text-muted">

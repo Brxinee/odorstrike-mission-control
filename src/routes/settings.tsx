@@ -1,23 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Badge, Kicker, PageHead, Panel, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Badge, Kicker, PageHead, Panel, Pending } from "@/components/mc/ui";
 import { BRAND, PRODUCT, RETURNS, SHIPPING } from "@/lib/mc/commerce";
-import { getAudit } from "@/lib/mc/queries";
-import { formatIst } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
-  loader: () => getAudit(),
   pendingComponent: Pending,
   component: SettingsPage,
 });
 
 function SettingsPage() {
-  const { rows } = Route.useLoaderData();
-
   return (
-    <div className="space-y-8">
-      <PageHead kicker="Settings" title="Commercial constitution" />
+    <div className="space-y-6">
+      <PageHead
+        kicker="Settings"
+        title="Commercial constitution"
+        desc="These numbers do not change from this screen. Audit lives on Activity. Production login/TOTP stays on admin.smelloff.in."
+      />
 
-      <Panel className="p-4">
+      <Panel className="p-5">
         <Kicker>Brand</Kicker>
         <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
           <div>Legal · {BRAND.legalName}</div>
@@ -31,7 +30,7 @@ function SettingsPage() {
         </dl>
       </Panel>
 
-      <Panel className="p-4">
+      <Panel className="p-5">
         <Kicker>SKU / price — do not silent-edit</Kicker>
         <ul className="mt-3 space-y-1 text-sm leading-6">
           <li>
@@ -51,7 +50,7 @@ function SettingsPage() {
       </Panel>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <Panel className="p-4">
+        <Panel className="p-5">
           <Kicker>Shipping</Kicker>
           <ul className="mt-3 space-y-1 text-sm text-muted">
             <li>{SHIPPING.prepaid}</li>
@@ -61,7 +60,7 @@ function SettingsPage() {
             <li>Tier-2/3 {SHIPPING.transitTier23}</li>
           </ul>
         </Panel>
-        <Panel className="p-4">
+        <Panel className="p-5">
           <Kicker>Returns</Kicker>
           <p className="mt-3 text-sm text-muted">
             {RETURNS.windowDays} days · {RETURNS.condition}
@@ -69,12 +68,12 @@ function SettingsPage() {
         </Panel>
       </div>
 
-      <Panel className="p-4">
+      <Panel className="p-5">
         <Kicker>This instance vs production</Kicker>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Preview Auth is OFF (unowned DEMO rows). Production Admin already has HttpOnly cookies, CSRF, TOTP, RBAC.
-          Do not copy session tokens here. Database is ON (PGLite in preview, Neon on deploy). Side effects that send
-          mail or capture money stay in Brxinee/Smelloff and Brxinee/Admin.
+          Preview Auth is OFF (unowned DEMO rows). Production Admin already has HttpOnly cookies, CSRF, TOTP, RBAC. Do
+          not copy session tokens here. Side effects that send mail or capture money stay in Brxinee/Smelloff and
+          Brxinee/Admin.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Badge tone="warn">Auth off</Badge>
@@ -82,40 +81,10 @@ function SettingsPage() {
           <Badge>IST</Badge>
           <Badge>paise</Badge>
         </div>
+        <Link to="/activity" className="mt-4 inline-flex h-11 items-center text-sm text-info">
+          Open activity / audit
+        </Link>
       </Panel>
-
-      <section>
-        <Kicker>Audit log</Kicker>
-        <Provenance>Last 60 rows · this ledger</Provenance>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead className="bg-surface-2">
-              <tr>
-                <Th>When</Th>
-                <Th>Actor</Th>
-                <Th>Action</Th>
-                <Th>Entity</Th>
-                <Th>Result</Th>
-                <Th>Req</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-line">
-                  <Td className="whitespace-nowrap text-muted">{formatIst(r.created_at)}</Td>
-                  <Td>{r.actor}</Td>
-                  <Td className="font-mono text-xs">{r.action}</Td>
-                  <Td className="font-mono text-xs">
-                    {r.entity_type}:{r.entity_id}
-                  </Td>
-                  <Td>{r.result}</Td>
-                  <Td className="font-mono text-[11px] text-faint">{r.request_id}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
   );
 }
