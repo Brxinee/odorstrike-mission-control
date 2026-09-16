@@ -46,6 +46,7 @@ function IncidentsPage() {
         kicker="Incidents"
         title="Fail visible"
         desc="Open P0 is email_events SCHEMA_MISMATCH. Health tiles are DEMO-encoded, not live-probed from this instance."
+        aside={<Provenance>Not live-probed from this instance except DEMO encoding</Provenance>}
       />
 
       <Panel className="border-danger/40 p-4">
