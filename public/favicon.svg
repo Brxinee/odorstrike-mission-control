@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img" aria-label="Smelloff">
+  <rect width="16" height="16" fill="#080808"/>
+  <rect x="3" y="2" width="10" height="2" fill="#B8FF57"/>
+  <rect x="3" y="7" width="10" height="2" fill="#B8FF57"/>
+  <rect x="3" y="12" width="10" height="2" fill="#B8FF57"/>
+  <rect x="3" y="2" width="2" height="7" fill="#B8FF57"/>
+  <rect x="11" y="7" width="2" height="7" fill="#B8FF57"/>
+</svg>
