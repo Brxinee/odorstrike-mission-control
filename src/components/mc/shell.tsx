@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
   Boxes,
@@ -7,6 +7,7 @@ import {
   Landmark,
   LayoutDashboard,
   Megaphone,
+  MoreHorizontal,
   Network,
   Search,
   Settings,
@@ -15,11 +16,12 @@ import {
   Sparkles,
   UserRound,
   Workflow,
+  X,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CommandPalette } from "@/components/mc/command-palette";
 import { Operator } from "@/components/mc/operator";
-import { Badge } from "@/components/mc/ui";
+import { Badge, Kbd } from "@/components/mc/ui";
 import { cn, IST } from "@/lib/utils";
 
 type NavItem = {
@@ -35,9 +37,9 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/", label: "Attention", icon: LayoutDashboard, mobile: true },
       { to: "/orders", label: "Orders", icon: ShoppingBag, mobile: true },
-      { to: "/payments", label: "Payments", icon: CreditCard, mobile: false },
+      { to: "/payments", label: "Payments", icon: CreditCard, mobile: true },
       { to: "/carts", label: "Carts", icon: ShoppingCart, mobile: false },
-      { to: "/customers", label: "Customers", icon: UserRound, mobile: true },
+      { to: "/customers", label: "Customers", icon: UserRound, mobile: false },
     ],
   },
   {
@@ -57,7 +59,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "System",
     items: [
-      { to: "/incidents", label: "Incidents", icon: CircleAlert, mobile: true },
+      { to: "/incidents", label: "Incidents", icon: CircleAlert, mobile: false },
       { to: "/automations", label: "Automations", icon: Workflow, mobile: false },
       { to: "/activity", label: "Activity", icon: Activity, mobile: false },
       { to: "/architecture", label: "Maps", icon: Network, mobile: false },
@@ -66,7 +68,36 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-const MOBILE: NavItem[] = GROUPS.flatMap((g) => g.items).filter((i) => i.mobile);
+const ALL: NavItem[] = GROUPS.flatMap((g) => g.items);
+const MOBILE: NavItem[] = ALL.filter((i) => i.mobile);
+
+const JUMP: Record<string, string> = {
+  h: "/",
+  o: "/orders",
+  p: "/payments",
+  c: "/customers",
+  k: "/carts",
+  f: "/finance",
+  i: "/inventory",
+  m: "/marketing",
+  n: "/incidents",
+  a: "/activity",
+  s: "/settings",
+};
+
+const SHORTCUTS: { keys: string; does: string }[] = [
+  { keys: "⌘K", does: "Search / jump / do" },
+  { keys: "/", does: "Open search" },
+  { keys: "⌘J", does: "Operator" },
+  { keys: "G then H", does: "Attention" },
+  { keys: "G then O", does: "Orders" },
+  { keys: "G then P", does: "Payments" },
+  { keys: "G then C", does: "Customers" },
+  { keys: "G then F", does: "Finance" },
+  { keys: "G then I", does: "Inventory" },
+  { keys: "?", does: "This list" },
+  { keys: "Esc", does: "Close overlay" },
+];
 
 function IstClock() {
   const [now, setNow] = useState(() => new Date());
@@ -89,25 +120,78 @@ function IstClock() {
   );
 }
 
+function isTypingTarget(el: EventTarget | null) {
+  if (!(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
+
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
   const [palette, setPalette] = useState(false);
   const [operator, setOperator] = useState(false);
+  const [more, setMore] = useState(false);
+  const [help, setHelp] = useState(false);
+  const pendingG = useRef(false);
+  const gTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPalette((v) => !v);
+        return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
         e.preventDefault();
         setOperator((v) => !v);
+        return;
+      }
+      if (isTypingTarget(e.target)) return;
+      if (e.key === "Escape") {
+        setPalette(false);
+        setOperator(false);
+        setMore(false);
+        setHelp(false);
+        pendingG.current = false;
+        return;
+      }
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        setHelp((v) => !v);
+        return;
+      }
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setPalette(true);
+        return;
+      }
+      if (pendingG.current) {
+        pendingG.current = false;
+        if (gTimer.current) window.clearTimeout(gTimer.current);
+        const to = JUMP[e.key.toLowerCase()];
+        if (to) {
+          e.preventDefault();
+          void navigate({ to: to as never });
+        }
+        return;
+      }
+      if (e.key.toLowerCase() === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        pendingG.current = true;
+        if (gTimer.current) window.clearTimeout(gTimer.current);
+        gTimer.current = window.setTimeout(() => {
+          pendingG.current = false;
+        }, 800);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [navigate]);
+
+  useEffect(() => {
+    setMore(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-bg text-fg">
@@ -139,8 +223,8 @@ export function Shell({ children }: { children: ReactNode }) {
                     key={item.to}
                     to={item.to}
                     className={cn(
-                      "mb-0.5 flex h-10 items-center gap-2.5 rounded-sm px-2.5 text-sm font-medium transition-colors duration-150",
-                      active ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface hover:text-fg",
+                      "mb-0.5 flex h-9 items-center gap-2.5 rounded-sm px-2.5 text-[13px] font-medium transition-colors duration-150",
+                      active ? "mc-nav-active bg-surface-2 text-fg" : "text-muted hover:bg-surface hover:text-fg",
                     )}
                   >
                     <Icon className={cn("size-4", active ? "text-acid" : "text-faint")} strokeWidth={1.75} />
@@ -159,11 +243,19 @@ export function Shell({ children }: { children: ReactNode }) {
           >
             <Search className="size-3.5" />
             Search
-            <kbd className="ml-auto font-mono text-[10px] text-faint">⌘K</kbd>
+            <span className="ml-auto flex items-center gap-1">
+              <Kbd>⌘K</Kbd>
+            </span>
           </button>
           <div className="mt-2 flex items-center justify-between gap-2">
             <IstClock />
-            <span className="font-mono text-[10px] uppercase tracking-wider text-faint">Demo</span>
+            <button
+              type="button"
+              onClick={() => setHelp(true)}
+              className="font-mono text-[10px] uppercase tracking-wider text-faint hover:text-muted"
+            >
+              ? shortcuts
+            </button>
           </div>
         </div>
       </aside>
@@ -223,6 +315,17 @@ export function Shell({ children }: { children: ReactNode }) {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setMore(true)}
+          className={cn(
+            "flex min-h-11 flex-1 flex-col items-center justify-center gap-1 text-[10px] font-medium",
+            more ? "text-acid" : "text-muted",
+          )}
+        >
+          <MoreHorizontal className="size-5" strokeWidth={1.75} />
+          More
+        </button>
       </nav>
 
       <button
@@ -232,8 +335,65 @@ export function Shell({ children }: { children: ReactNode }) {
       >
         <Sparkles className="size-4" />
         Operator
-        <kbd className="rounded-xs bg-acid-fg/10 px-1.5 font-mono text-[10px]">⌘J</kbd>
+        <Kbd>⌘J</Kbd>
       </button>
+
+      {more ? (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <button type="button" className="absolute inset-0 bg-bg/70" aria-label="Close menu" onClick={() => setMore(false)} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-lg border border-line bg-bg-1 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-surface-3" />
+            <div className="flex items-center justify-between px-4 pb-2">
+              <p className="text-sm font-semibold">All sections</p>
+              <button type="button" className="grid size-11 place-items-center" onClick={() => setMore(false)} aria-label="Close">
+                <X className="size-4" />
+              </button>
+            </div>
+            {GROUPS.map((group) => (
+              <div key={group.label} className="px-2 pb-3">
+                <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{group.label}</p>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={cn(
+                        "flex h-12 items-center gap-3 rounded-sm px-3 text-sm",
+                        active ? "bg-surface-2 text-fg" : "text-muted",
+                      )}
+                    >
+                      <Icon className={cn("size-4", active ? "text-acid" : "text-faint")} strokeWidth={1.75} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {help ? (
+        <div className="fixed inset-0 z-50">
+          <button type="button" className="absolute inset-0 bg-bg/70" aria-label="Close shortcuts" onClick={() => setHelp(false)} />
+          <div className="relative mx-auto mt-[16vh] w-[min(420px,calc(100%-1.5rem))] rounded-lg border border-line bg-surface p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-semibold">Keyboard</p>
+              <Kbd>?</Kbd>
+            </div>
+            <ul className="space-y-2">
+              {SHORTCUTS.map((s) => (
+                <li key={s.keys} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-muted">{s.does}</span>
+                  <span className="font-mono text-[11px] text-faint">{s.keys}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
 
       <CommandPalette
         open={palette}

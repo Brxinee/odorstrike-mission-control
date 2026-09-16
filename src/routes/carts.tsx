@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Badge, Empty, Kicker, Metric, PageHead, Panel, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { Badge, Empty, Kicker, Metric, PageHead, Panel, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getCarts } from "@/lib/mc/queries";
 import { formatIst, formatPaise } from "@/lib/utils";
 
@@ -44,41 +44,39 @@ function CartsPage() {
       {data.rows.length === 0 ? (
         <Empty title="No carts in this ledger" body="DEMO sample is empty or the carts table is not migrated yet." />
       ) : (
-        <div className="overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead className="bg-surface-2">
-              <tr>
-                <Th>Cart</Th>
-                <Th>Email</Th>
-                <Th>Qty</Th>
-                <Th>Product ₹</Th>
-                <Th>Last activity</Th>
-                <Th>State</Th>
+        <TableWrap minClass="min-w-[720px]">
+          <thead>
+            <tr>
+              <Th>Cart</Th>
+              <Th>Email</Th>
+              <Th>Qty</Th>
+              <Th>Product ₹</Th>
+              <Th>Last activity</Th>
+              <Th>State</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.rows.map((c) => (
+              <tr key={c.id} className="border-t border-line">
+                <Td className="font-mono">{c.id}</Td>
+                <Td>
+                  {c.email_masked ?? "—"}{" "}
+                  {c.email_verified ? <Badge tone="acid">verified</Badge> : <Badge>unverified</Badge>}
+                </Td>
+                <Td className="font-mono tabular">{c.qty}</Td>
+                <Td className="font-mono tabular">{formatPaise(c.product_paise)}</Td>
+                <Td className="text-muted">{formatIst(c.last_activity_at)}</Td>
+                <Td>
+                  {c.converted_order_code ? (
+                    <span className="font-mono text-xs">{c.converted_order_code}</span>
+                  ) : (
+                    <Badge tone="warn">open</Badge>
+                  )}
+                </Td>
               </tr>
-            </thead>
-            <tbody>
-              {data.rows.map((c) => (
-                <tr key={c.id} className="border-t border-line">
-                  <Td className="font-mono">{c.id}</Td>
-                  <Td>
-                    {c.email_masked ?? "—"}{" "}
-                    {c.email_verified ? <Badge tone="acid">verified</Badge> : <Badge>unverified</Badge>}
-                  </Td>
-                  <Td>{c.qty}</Td>
-                  <Td className="font-mono">{formatPaise(c.product_paise)}</Td>
-                  <Td className="text-muted">{formatIst(c.last_activity_at)}</Td>
-                  <Td>
-                    {c.converted_order_code ? (
-                      <span className="font-mono text-xs">{c.converted_order_code}</span>
-                    ) : (
-                      <Badge tone="warn">open</Badge>
-                    )}
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </TableWrap>
       )}
     </div>
   );

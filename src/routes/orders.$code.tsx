@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge, Btn, Empty, Kicker, orderTone, PageHead, Panel, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { Badge, Btn, Empty, Kicker, orderTone, PageHead, Panel, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getOrder, verifyPayment } from "@/lib/mc/queries";
 import { PRODUCT } from "@/lib/mc/commerce";
 import { formatIst, formatPaise } from "@/lib/utils";
@@ -68,6 +68,7 @@ function OrderPage() {
       <PageHead
         kicker="Order"
         title={order.order_code}
+        desc="Object page. Amount is integer paise. Prepaid unverified is not cash."
         aside={
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={orderTone(order.status)}>{order.status}</Badge>
@@ -165,9 +166,9 @@ function OrderPage() {
 
       <section>
         <Kicker>Other orders for this customer</Kicker>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[520px] border-collapse">
-            <thead className="bg-surface-2">
+        <div className="mt-3">
+          <TableWrap minClass="min-w-[520px]">
+            <thead>
               <tr>
                 <Th>Order</Th>
                 <Th>Status</Th>
@@ -191,7 +192,7 @@ function OrderPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TableWrap>
         </div>
       </section>
     </div>

@@ -1,17 +1,21 @@
-import type { ReactNode } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function Provenance({ children }: { children: ReactNode }) {
-  return (
-    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{children}</p>
-  );
+  return <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{children}</p>;
 }
 
 export function Kicker({ children }: { children: ReactNode }) {
   return (
-    <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">
+    <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-muted">{children}</span>
+  );
+}
+
+export function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-xs border border-line bg-surface-2 px-1 font-mono text-[10px] text-faint">
       {children}
-    </span>
+    </kbd>
   );
 }
 
@@ -95,23 +99,32 @@ export function Chip({
   active,
   onClick,
   children,
+  count,
 }: {
   active: boolean;
   onClick: () => void;
   children: ReactNode;
+  count?: number;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-11 min-h-11 items-center rounded-sm px-3 text-sm font-medium transition-colors duration-150",
+        "mc-chip inline-flex h-8 min-h-8 items-center gap-1.5 rounded-sm px-2.5 text-[13px] font-medium transition-colors duration-150",
         active ? "bg-acid text-acid-fg" : "border border-line bg-surface text-muted hover:text-fg",
       )}
     >
       {children}
+      {count != null ? (
+        <span className={cn("font-mono text-[10px] tabular", active ? "text-acid-fg/70" : "text-faint")}>{count}</span>
+      ) : null}
     </button>
   );
+}
+
+export function FilterBar({ children }: { children: ReactNode }) {
+  return <div className="mc-filters flex flex-wrap gap-2">{children}</div>;
 }
 
 export function Panel({
@@ -122,12 +135,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section
-      className={cn(
-        "rounded-lg border border-line bg-surface shadow-[0_0_0_1px_rgba(255,255,255,0.03)]",
-        className,
-      )}
-    >
+    <section className={cn("rounded-lg border border-line bg-surface shadow-[0_0_0_1px_rgba(255,255,255,0.03)]", className)}>
       {children}
     </section>
   );
@@ -226,14 +234,22 @@ export function TableWrap({
 
 export function Th({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <th className={cn("px-3 py-2.5 text-left font-mono text-[10px] uppercase tracking-wider text-faint", className)}>
+    <th className={cn("px-3 py-2 text-left font-mono text-[10px] uppercase tracking-wider text-faint", className)}>
       {children}
     </th>
   );
 }
 
 export function Td({ children, className }: { children: ReactNode; className?: string }) {
-  return <td className={cn("px-3 py-3 text-sm", className)}>{children}</td>;
+  return <td className={cn("px-3 py-2.5 text-sm", className)}>{children}</td>;
+}
+
+export function rowActivate(e: MouseEvent | KeyboardEvent, go: () => void) {
+  const t = e.target as HTMLElement;
+  if (t.closest("a, button, input, textarea, select, label")) return;
+  if ("key" in e && e.key !== "Enter" && e.key !== " ") return;
+  if ("key" in e) e.preventDefault();
+  go();
 }
 
 export function orderTone(status: string): "acid" | "warn" | "danger" | "info" | "neutral" {

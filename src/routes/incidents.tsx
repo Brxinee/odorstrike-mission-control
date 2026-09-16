@@ -45,7 +45,7 @@ function IncidentsPage() {
       <PageHead
         kicker="Incidents"
         title="Fail visible"
-        aside={<Provenance>Not live-probed from this instance except DEMO encoding</Provenance>}
+        desc="Open P0 is email_events SCHEMA_MISMATCH. Health tiles are DEMO-encoded, not live-probed from this instance."
       />
 
       <Panel className="border-danger/40 p-4">

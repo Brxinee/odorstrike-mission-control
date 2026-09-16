@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Badge, Kicker, PageHead, Panel, Pending } from "@/components/mc/ui";
 import { BRAND, PRODUCT, RETURNS, SHIPPING } from "@/lib/mc/commerce";
+import { formatPaise } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
   pendingComponent: Pending,
@@ -38,8 +39,8 @@ function SettingsPage() {
             <span className="font-mono">{PRODUCT.operatorAlias}</span>
           </li>
           <li>
-            ₹{PRODUCT.pricePaise / 100} prepaid · MRP ₹{PRODUCT.mrpPaise / 100} · COD fee ₹{PRODUCT.codFeePaise / 100} ·
-            collectable ₹{PRODUCT.priceCodPaise / 100}
+            {formatPaise(PRODUCT.pricePaise)} prepaid · MRP {formatPaise(PRODUCT.mrpPaise)} · COD fee{" "}
+            {formatPaise(PRODUCT.codFeePaise)} · collectable {formatPaise(PRODUCT.priceCodPaise)}
           </li>
           <li>{PRODUCT.claim}</li>
           <li>In scope: {PRODUCT.inScope.join(", ")}</li>

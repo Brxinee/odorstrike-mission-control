@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Metric, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
+import { Empty, Metric, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getMarketing } from "@/lib/mc/queries";
 import { formatPaise } from "@/lib/utils";
 
@@ -29,6 +29,9 @@ function MarketingPage() {
         />
       </div>
       <Provenance>Grouped from DEMO orders.source / medium · revenue = product_paise</Provenance>
+      {data.rows.length === 0 ? (
+        <Empty title="No source rows" body="DEMO orders have no source/medium yet." />
+      ) : (
       <TableWrap minClass="min-w-[640px]">
         <thead>
           <tr>
@@ -53,6 +56,7 @@ function MarketingPage() {
           ))}
         </tbody>
       </TableWrap>
+      )}
     </div>
   );
 }

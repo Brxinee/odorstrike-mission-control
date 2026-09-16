@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge, Btn, orderTone, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
+import { Badge, Btn, Empty, orderTone, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getPayments, verifyAllPending, verifyPayment } from "@/lib/mc/queries";
 import { ageLabel, formatIst, formatPaise } from "@/lib/utils";
 
@@ -61,6 +61,9 @@ function PaymentsPage() {
       />
       <Provenance>payments ⋈ orders · integer paise</Provenance>
       <div className="mt-3">
+        {rows.length === 0 ? (
+          <Empty title="No payments in this ledger" body="DEMO sample is empty." />
+        ) : (
         <TableWrap>
           <thead>
             <tr>
@@ -97,7 +100,7 @@ function PaymentsPage() {
                 <Td className="whitespace-nowrap text-muted">{formatIst(p.created_at)}</Td>
                 <Td>
                   {p.status === "pending_verify" ? (
-                    <Btn disabled={busy !== null} onClick={() => void verifyOne(p.id)}>
+                    <Btn className="h-8 min-h-8" disabled={busy !== null} onClick={() => void verifyOne(p.id)}>
                       Verify
                     </Btn>
                   ) : p.status === "refund_due" ? (
@@ -108,6 +111,7 @@ function PaymentsPage() {
             ))}
           </tbody>
         </TableWrap>
+        )}
       </div>
     </div>
   );

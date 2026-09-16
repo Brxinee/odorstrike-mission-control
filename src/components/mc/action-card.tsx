@@ -36,7 +36,7 @@ export function ActionCard({ action }: { action: ActionRow }) {
   }
 
   return (
-    <article className="rounded-md border border-line bg-surface p-4">
+    <article className="rounded-lg border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={severityTone(action.severity)}>{action.severity}</Badge>
         <Badge tone={confidenceTone(action.confidence)}>{action.confidence}</Badge>

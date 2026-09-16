@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Badge, Empty, Kicker, orderTone, PageHead, Panel, Pending, Provenance, Td, Th } from "@/components/mc/ui";
+import { Badge, Empty, Kicker, orderTone, PageHead, Panel, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
 import { getCustomer } from "@/lib/mc/queries";
 import { PLANNING } from "@/lib/mc/commerce";
 import { formatIst, formatIstDate, formatPaise } from "@/lib/utils";
@@ -26,8 +26,9 @@ function CustomerPage() {
   return (
     <div className="space-y-6">
       <PageHead
-        kicker="Customer 360"
+        kicker="Customer"
         title={String(c.display_code)}
+        desc="Identity is masked. Lifetime ₹ is booked product, not contribution LTV. Predicted reorder is INFERRED."
         aside={<Provenance>DEMO · masked identity</Provenance>}
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -113,9 +114,9 @@ function CustomerPage() {
       </section>
       <section>
         <Kicker>Orders</Kicker>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[640px] border-collapse">
-            <thead className="bg-surface-2">
+        <div className="mt-3">
+          <TableWrap minClass="min-w-[640px]">
+            <thead>
               <tr>
                 <Th>Order</Th>
                 <Th>Status</Th>
@@ -143,7 +144,7 @@ function CustomerPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TableWrap>
         </div>
       </section>
     </div>

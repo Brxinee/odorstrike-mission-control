@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Badge, Chip, Empty, orderTone, PageHead, Pending, Provenance, TableWrap, Td, Th } from "@/components/mc/ui";
+import { Badge, Chip, Empty, FilterBar, orderTone, PageHead, Pending, Provenance, TableWrap, Td, Th, rowActivate } from "@/components/mc/ui";
 import { getOrders } from "@/lib/mc/queries";
 import { formatIst, formatPaise } from "@/lib/utils";
 
@@ -23,7 +23,13 @@ const FILTERS = [
 
 function OrdersPage() {
   const { rows, provenance } = Route.useLoaderData();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("all");
+  const counts = useMemo(() => {
+    const map: Record<string, number> = { all: rows.length };
+    for (const r of rows) map[r.status] = (map[r.status] ?? 0) + 1;
+    return map;
+  }, [rows]);
   const shown = useMemo(
     () => (filter === "all" ? rows : rows.filter((r) => r.status === filter)),
     [rows, filter],
@@ -34,19 +40,16 @@ function OrdersPage() {
       <PageHead
         kicker="Orders"
         title="Index"
-        desc="Stripe-style table first. Status is the order row, not a vibe. Catalog SKU OS-001-50ML."
+        desc="Table first. Status is the order row, not a vibe. Catalog SKU OS-001-50ML. Click a row for the object."
         aside={<Provenance>{provenance}</Provenance>}
       />
-      <div className="mb-4 flex flex-wrap gap-2">
+      <FilterBar>
         {FILTERS.map((f) => (
-          <Chip key={f.id} active={filter === f.id} onClick={() => setFilter(f.id)}>
+          <Chip key={f.id} active={filter === f.id} count={counts[f.id] ?? 0} onClick={() => setFilter(f.id)}>
             {f.label}
           </Chip>
         ))}
-      </div>
-      <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-faint">
-        {shown.length} of {rows.length}
-      </p>
+      </FilterBar>
       {shown.length === 0 ? (
         <Empty title="No orders in this filter" body="Clear the chip or wait for the next DEMO placement." />
       ) : (
@@ -65,12 +68,14 @@ function OrdersPage() {
           </thead>
           <tbody>
             {shown.map((o) => (
-              <tr key={o.id} className="border-t border-line hover:bg-surface-2/60">
-                <Td>
-                  <Link to="/orders/$code" params={{ code: o.order_code }} className="font-mono text-info">
-                    {o.order_code}
-                  </Link>
-                </Td>
+              <tr
+                key={o.id}
+                className="mc-row border-t border-line"
+                tabIndex={0}
+                onClick={(e) => rowActivate(e, () => void navigate({ to: "/orders/$code", params: { code: o.order_code } }))}
+                onKeyDown={(e) => rowActivate(e, () => void navigate({ to: "/orders/$code", params: { code: o.order_code } }))}
+              >
+                <Td className="font-mono text-info">{o.order_code}</Td>
                 <Td>
                   <Badge tone={orderTone(o.status)}>{o.status}</Badge>
                 </Td>
